@@ -584,16 +584,21 @@ ${QUALITY_PARAMETERS}
 STYLE: Premium supplement-brand product-hero backdrop — energetic, modern, scroll-stopping. Like a high-end pre-workout campaign set, minus the product.`;
 }
 
+// Per-platform output aspect ratio for generated images. Carousels are always
+// square. (Model + endpoint are chosen server-side in /api/generate-image.)
+const IMAGE_ASPECT = { instagram: '1:1', linkedin: '1:1', facebook: '16:9', tiktok: '9:16' };
+
 // Generate an image. Pass { referenceUrls: [publicUrl, ...] } to route through
-// xAI's image-EDITS endpoint so Grok actually uses your real product photo(s).
+// xAI's image-EDITS endpoint so Grok actually uses your real product photo(s),
+// and { aspectRatio: '1:1' | '16:9' | '9:16' } to control output dimensions.
 async function callGenerateImage(prompt, opts = {}) {
-  const { referenceUrls = null } = opts;
+  const { referenceUrls = null, aspectRatio = null } = opts;
   const response = await fetch("/api/generate-image", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      model: "grok-imagine-image-pro",
       prompt,
+      ...(aspectRatio && { aspectRatio }),
       ...(referenceUrls && referenceUrls.length > 0 && { referenceImageUrls: referenceUrls }),
     }),
   });
@@ -737,7 +742,7 @@ async function generateCreative(post, brandConfig, passedAssets) {
 
     for (let i = 0; i < carouselPrompts.length; i++) {
       const useRefs = i === 0 ? coverRefUrls : null;  // only the cover gets the product reference
-      const url = await callGenerateImage(carouselPrompts[i], { referenceUrls: useRefs });
+      const url = await callGenerateImage(carouselPrompts[i], { referenceUrls: useRefs, aspectRatio: '1:1' });
       if (url) urls.push(url);
     }
 
@@ -747,6 +752,7 @@ async function generateCreative(post, brandConfig, passedAssets) {
     const fullContext = (suggestedImage || '') + ' ' + (post.caption || '') + ' ' + hookText;
     const asset = assetId ? BRAND_ASSETS.find(a => a.id === assetId) : null;
     const productUrl = (asset && asset.localPath) ? asset.localPath : null;
+    const imgAspect = IMAGE_ASPECT[platform] || '1:1';   // per-platform dimensions
 
     // ── OPTIONAL product-hero COMPOSITE (BRAND.compositeProductHeroes) ──
     // Off by default: Offer posts use the full designed ad (headline + callouts)
@@ -755,7 +761,7 @@ async function generateCreative(post, brandConfig, passedAssets) {
     if (pillar === 'offer' && productUrl && BRAND.compositeProductHeroes) {
       try {
         const bgPrompt = buildProductBackgroundPrompt(platform, pillar, brandConfig);
-        const bgUrl = await callGenerateImage(bgPrompt); // text-to-image, no product rendered
+        const bgUrl = await callGenerateImage(bgPrompt, { aspectRatio: imgAspect }); // text-to-image, no product rendered
         if (bgUrl) {
           const compRes = await fetch('/api/composite-product', {
             method: 'POST',
@@ -780,8 +786,8 @@ async function generateCreative(post, brandConfig, passedAssets) {
     // Education stays text-to-image (ingredient/illustration style, no product ref).
     const prompt = buildImagePrompt(platform, pillar, suggestedImage, assetId, brandConfig, hookText, fullContext, post.caption);
     const refUrls = (productUrl && pillar !== 'education') ? [productUrl] : null;
-    console.log('About to call callGenerateImage, reference photo:', refUrls ? 'YES' : 'NO');
-    const url = await callGenerateImage(prompt, { referenceUrls: refUrls });
+    console.log('About to call callGenerateImage, reference photo:', refUrls ? 'YES' : 'NO', '| aspect:', imgAspect);
+    const url = await callGenerateImage(prompt, { referenceUrls: refUrls, aspectRatio: imgAspect });
     return { type: "image", url, prompt };
   }
 }
