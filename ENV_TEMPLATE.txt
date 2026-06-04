@@ -1,0 +1,39 @@
+# ============================================================================
+# UpSurge Social Engine — Environment Variables
+# ----------------------------------------------------------------------------
+# Copy these into a `.env.local` file in the project root (for local dev) AND
+# into your Vercel project's Environment Variables (for production).
+# Fill in the real values — do NOT commit .env.local (it's gitignored).
+# ============================================================================
+
+# --- Supabase (your NEW UpSurge project — Dashboard → Project Settings → API) ---
+
+# Project URL, e.g. https://abcdefghijklmnop.supabase.co
+# Used by the client AND by server routes that build storage/media URLs.
+NEXT_PUBLIC_SUPABASE_URL=https://YOUR-PROJECT-ref.supabase.co
+
+# Public "anon" key (safe to expose to the browser). Used for normal
+# authenticated reads/writes from the app.
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-public-key
+
+# Service role key (SECRET — server-side only). Used by API routes that write
+# images/assets to storage and the DB (overlay-and-save, upload-asset, etc.).
+# Never expose this to the browser.
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-secret-key
+
+# --- Anthropic (Claude) — text generation (captions, hooks, slide copy) ---
+# Get one at https://console.anthropic.com → API Keys
+ANTHROPIC_API_KEY=sk-ant-...
+
+# --- xAI (Grok) — image + video generation (Grok Imagine Pro) ---
+# Video is hard-routed through Grok (HeyGen removed), so this powers all media.
+# Get one at https://console.x.ai
+XAI_API_KEY=xai-...
+
+# ============================================================================
+# NOT NEEDED for this build:
+#   - GHL_* (GoHighLevel) — scheduling is STUBBED (no external posting).
+#   - HEYGEN_API_KEY        — video uses Grok, not HeyGen. (Only the optional,
+#                             unused Avatars tab references it.)
+# Add them back only if you later wire up real scheduling or HeyGen avatars.
+# ============================================================================
