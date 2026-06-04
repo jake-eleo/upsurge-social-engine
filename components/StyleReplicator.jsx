@@ -166,7 +166,7 @@ ${BRAND.targetAudience}
 Structure/function claims only ("supports energy", "promotes recovery"). NEVER disease claims ("cures/treats/prevents") or weight-loss guarantees ("lose 20 lbs"). No medical/clinical authority framing.
 
 ## PRODUCTS
-${BRAND.products.map(p => `- ${p.name} (${p.category})`).join('\n')}
+${BRAND.products.map(p => `- ${p.name} (${p.category}): ${p.does}`).join('\n')}
 
 ## BRAND ASSETS (reference by ID in suggestedImage)
 ${assetList}

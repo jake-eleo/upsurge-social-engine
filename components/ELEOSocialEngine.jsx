@@ -796,9 +796,10 @@ Primary offer: ${brandConfig.primaryOffer}
 CTA: "${brandConfig.primaryCTA}" | Link: ${brandConfig.bookingLink}
 ${brandConfig.currentPromo?`Promo: ${brandConfig.currentPromo}`:""}
 
-## PRODUCTS
-${BRAND.products.map(p => `- ${p.name} (${p.category}): ${p.description}`).join('\n')}
+## PRODUCTS (reference these by name; use the ingredients for credible, specific copy)
+${BRAND.products.map(p => `- ${p.name} (${p.category}): ${p.does}${p.ingredients ? `\n    Key ingredients: ${p.ingredients}` : ''}`).join('\n')}
 Categories: ${BRAND.productCategories.join(' | ')}
+When citing ingredients, keep claims structure/function only (e.g. "supports", "promotes") — never disease or weight-loss guarantees.
 
 ## TARGET CUSTOMER
 ${BRAND.targetAudience}
