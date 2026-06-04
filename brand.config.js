@@ -71,6 +71,11 @@ export const BRAND = {
   genderAware:    false,    // UpSurge is unisex — single palette, gender-neutral subjects
   videoProvider:  'grok',   // 'grok' = Grok enhanced pipeline (no HeyGen)
   scheduling:     'stub',   // 'stub' = approval marks "scheduled" locally, no external posting
+  // Offer/product-hero images: false = full designed ad (headline + callouts) with
+  // your real product via image-edits (RECOMMENDED). true = paste the real product
+  // PNG onto a clean, TEXT-FREE background (pixel-exact product, but no marketing copy;
+  // needs transparent-background product cutouts).
+  compositeProductHeroes: false,
 
   // ── Products ────────────────────────────────────────────────────
   // Auto-synced from the live upsurgesupps.com catalog (Shopify products.json).

@@ -748,9 +748,11 @@ async function generateCreative(post, brandConfig, passedAssets) {
     const asset = assetId ? BRAND_ASSETS.find(a => a.id === assetId) : null;
     const productUrl = (asset && asset.localPath) ? asset.localPath : null;
 
-    // ── OFFER / product-hero: COMPOSITE the real product PNG for pixel-exact fidelity ──
-    // Generate a product-free background, then paste the actual product photo on top.
-    if (pillar === 'offer' && productUrl) {
+    // ── OPTIONAL product-hero COMPOSITE (BRAND.compositeProductHeroes) ──
+    // Off by default: Offer posts use the full designed ad (headline + callouts)
+    // via image-edits below. Flip the flag on for a clean, text-free product shot
+    // with the real product PNG composited on top.
+    if (pillar === 'offer' && productUrl && BRAND.compositeProductHeroes) {
       try {
         const bgPrompt = buildProductBackgroundPrompt(platform, pillar, brandConfig);
         const bgUrl = await callGenerateImage(bgPrompt); // text-to-image, no product rendered
