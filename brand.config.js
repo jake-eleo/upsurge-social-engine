@@ -81,7 +81,7 @@ export const BRAND = {
     // ── Pre / Intra Workout ──
     { name: 'Up-Fuel', category: 'Pre/Intra Workout',
       does: 'Pre-workout powder to support energy, endurance, focus, and pumps before training.',
-      ingredients: '150mg Caffeine, 1,500mg Creatine Malate, Beta-Alanine, L-Arginine AKG, 550mg matrix (L-Taurine, Betaine Anhydrous, L-Citrulline Malate, Glycine, Tyrosine), B12/B6/Folate/Magnesium' },
+      ingredients: '150mg Caffeine, 1,500mg Creatine Malate, 750mg Beta-Alanine, 1,500mg L-Arginine AKG, 20mg Niacin, 550mg matrix (L-Taurine, Betaine Anhydrous, L-Citrulline Malate, Glycine, Tyrosine), B12/B6/B2/Folate/Magnesium' },
     { name: 'Surge', category: 'Pre/Intra Workout',
       does: 'Capsule pre-workout to support nitric oxide, blood flow, pumps, and endurance (no powder).',
       ingredients: '400mg L-Arginine + 400mg L-Arginine AKG, 200mg L-Citrulline HCl, 200mg Citrulline Malate, 80mg Beta-Alanine, 15mg Niacin, 36mg Calcium' },
