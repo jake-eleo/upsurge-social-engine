@@ -132,29 +132,9 @@ const DEFAULT_BRAND_CONFIG = {
 // Brand assets are now loaded dynamically from Supabase
 let BRAND_ASSETS = [];
 
-// ── Load asset as base64 for image-to-image ───────────────────────
-// Fetches the actual image file and converts to base64 for Grok reference
-async function loadAssetAsBase64(assetId) {
-  console.log('loadAssetAsBase64 called with:', assetId, 'BRAND_ASSETS length:', BRAND_ASSETS.length);
-  const asset = BRAND_ASSETS.find(a => a.id === assetId);
-  if (!asset) return null;
-  const url = asset.localPath;
-  console.log('Asset URL:', url);
-  if (!url) return null;
-  try {
-    const response = await fetch('/api/fetch-asset', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ url }),
-    });
-    const data = await response.json();
-    if (data.error) throw new Error(data.error);
-    return { base64: data.base64, mediaType: data.mediaType };
-  } catch (e) {
-    console.error('Could not load asset for image-to-image:', e.message);
-    return null;
-  }
-}
+// NOTE: image-to-image now passes the asset's public URL straight to the xAI
+// image-edits endpoint (see callGenerateImage / /api/generate-image), so the old
+// base64 loader is no longer needed.
 
 // ─────────────────────────────────────────────────────────────────
 // UPSURGE VISUAL IDENTITY PROMPT SYSTEM
@@ -582,19 +562,39 @@ function extractAssetId(suggestedImage, fullContext) {
 // Jake: update these URLs after completing Step 4h of the guide
 // ─────────────────────────────────────────────────────────────────
 
-async function callGenerateImage(prompt, referenceImageBase64, referenceImageType) {
-  // In production this goes to /api/generate-image
-  // For now falls back to direct xAI call (works in artifact proxy)
+// Product-free, text-free background scene for COMPOSITING a real product photo
+// on top (used for offer/product-hero shots — pixel-exact product).
+function buildProductBackgroundPrompt(platform, pillar, brandConfig) {
+  const platformComp = PLATFORM_COMPOSITION[platform] || PLATFORM_COMPOSITION.instagram;
+  return `Create a premium, TEXT-FREE product-hero BACKGROUND for ${BRAND.identity.name} (${BRAND.identity.tagline}) — a fitness supplements brand.
+
+PURPOSE: A real product photo will be composited into the CENTER afterward, so:
+- Leave the CENTER (roughly the middle 60%) relatively clean and uncluttered, with empty space for a product to sit.
+- Show NO product, bottle, tub, jar, scoop, or container — the product is added later.
+- Absolutely NO text, words, letters, numbers, logos, or watermarks anywhere in the image.
+
+SCENE: Energetic, premium atmosphere — dramatic rim lighting, energy rings, light beams, and particle effects radiating from the center where the product will sit. Deep dark background with ${BRAND.colors.primary} aqua and ${BRAND.colors.secondary} violet atmospheric glow.
+
+PLATFORM & COMPOSITION: ${platformComp}
+
+${UPSURGE_BRAND_COLORS}
+
+${QUALITY_PARAMETERS}
+
+STYLE: Premium supplement-brand product-hero backdrop — energetic, modern, scroll-stopping. Like a high-end pre-workout campaign set, minus the product.`;
+}
+
+// Generate an image. Pass { referenceUrls: [publicUrl, ...] } to route through
+// xAI's image-EDITS endpoint so Grok actually uses your real product photo(s).
+async function callGenerateImage(prompt, opts = {}) {
+  const { referenceUrls = null } = opts;
   const response = await fetch("/api/generate-image", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       model: "grok-imagine-image-pro",
       prompt,
-      n: 1,
-      ...(referenceImageBase64 && {
-        image: { type: "base64", media_type: referenceImageType || "image/jpeg", data: referenceImageBase64 }
-      }),
+      ...(referenceUrls && referenceUrls.length > 0 && { referenceImageUrls: referenceUrls }),
     }),
   });
   if (!response.ok) throw new Error(`xAI Image API ${response.status}`);
@@ -729,43 +729,57 @@ async function generateCreative(post, brandConfig, passedAssets) {
     // Generate structured carousel: cover + info slides + CTA
     const carouselPrompts = buildCarouselPrompts(platform, pillar, post, brandConfig, slideContent);
     const urls = [];
-    
-    // Load reference image once for the cover slide — skip for education carousels (anatomical illustrations don't need product ref)
-    let refBase64 = null, refType = null;
-    if (assetId && pillar !== 'education') {
-      try {
-        const ref = await loadAssetAsBase64(assetId);
-        if (ref) { refBase64 = ref.base64; refType = ref.mediaType; }
-      } catch(e) { console.warn('Reference image load failed:', e.message); }
-    }
-    
+
+    // Reference the real product photo (public URL) on the COVER slide only, via
+    // the image-edits endpoint. Skip for education (ingredient/illustration style).
+    const coverAsset = (assetId && pillar !== 'education') ? BRAND_ASSETS.find(a => a.id === assetId) : null;
+    const coverRefUrls = (coverAsset && coverAsset.localPath) ? [coverAsset.localPath] : null;
+
     for (let i = 0; i < carouselPrompts.length; i++) {
-      // Only use reference image on cover slide (slide 0)
-      const useRef = i === 0 && refBase64;
-      const url = await callGenerateImage(carouselPrompts[i], useRef ? refBase64 : null, useRef ? refType : null);
+      const useRefs = i === 0 ? coverRefUrls : null;  // only the cover gets the product reference
+      const url = await callGenerateImage(carouselPrompts[i], { referenceUrls: useRefs });
       if (url) urls.push(url);
     }
-    
+
     return { type: "carousel", url: urls[0], urls, prompt: `Carousel: ${carouselPrompts.length} slides` };
   } else {
     const hookText = post.hook || '';
     const fullContext = (suggestedImage || '') + ' ' + (post.caption || '') + ' ' + hookText;
-    const prompt = buildImagePrompt(platform, pillar, suggestedImage, assetId, brandConfig, hookText, fullContext, post.caption);
-    let refBase64 = null, refType = null;
-    // Skip reference image for education posts — they need anatomical illustrations, not product photos.
-    // Including a vial reference causes Grok to render mixed compositions that often go feminine on hormone topics.
-    if (assetId && pillar !== 'education') {
+    const asset = assetId ? BRAND_ASSETS.find(a => a.id === assetId) : null;
+    const productUrl = (asset && asset.localPath) ? asset.localPath : null;
+
+    // ── OFFER / product-hero: COMPOSITE the real product PNG for pixel-exact fidelity ──
+    // Generate a product-free background, then paste the actual product photo on top.
+    if (pillar === 'offer' && productUrl) {
       try {
-        console.log('Loading reference image for:', assetId);
-        const ref = await loadAssetAsBase64(assetId);
-        console.log('Reference loaded:', ref ? 'YES' : 'NO');
-        if (ref) { refBase64 = ref.base64; refType = ref.mediaType; }
-      } catch(e) {
-        console.warn('Reference image load failed:', e.message);
+        const bgPrompt = buildProductBackgroundPrompt(platform, pillar, brandConfig);
+        const bgUrl = await callGenerateImage(bgPrompt); // text-to-image, no product rendered
+        if (bgUrl) {
+          const compRes = await fetch('/api/composite-product', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ backgroundUrl: bgUrl, productUrl, postId: post.id }),
+          });
+          if (compRes.ok) {
+            const comp = await compRes.json();
+            if (comp.url) {
+              console.log('🖼 Composited real product photo onto generated background.');
+              return { type: "image", url: comp.url, prompt: bgPrompt };
+            }
+          }
+          console.warn('Composite failed; falling back to image-edits.');
+        }
+      } catch (e) {
+        console.warn('Composite path error, falling back to image-edits:', e.message);
       }
     }
-    console.log('About to call callGenerateImage, refBase64:', refBase64 ? 'YES' : 'NO');
-    const url = await callGenerateImage(prompt, refBase64, refType);
+
+    // ── Everything else with a product photo → IMAGE-EDITS (Grok uses the photo) ──
+    // Education stays text-to-image (ingredient/illustration style, no product ref).
+    const prompt = buildImagePrompt(platform, pillar, suggestedImage, assetId, brandConfig, hookText, fullContext, post.caption);
+    const refUrls = (productUrl && pillar !== 'education') ? [productUrl] : null;
+    console.log('About to call callGenerateImage, reference photo:', refUrls ? 'YES' : 'NO');
+    const url = await callGenerateImage(prompt, { referenceUrls: refUrls });
     return { type: "image", url, prompt };
   }
 }
