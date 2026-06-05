@@ -2273,6 +2273,43 @@ const approvePost = async (id) => {
     if (editPost?.id === id) { setEditPost(null); setEditMode(false); }
   };
 
+  // Post immediately (bypass the schedule): fires the Make webhook now via the
+  // manual /api/schedule-ghl route, then marks the post "posted".
+  const [postingNowId, setPostingNowId] = useState(null);
+  const postNow = async (id) => {
+    const p = posts.find(x => x.id === id);
+    if (!p) return;
+    if (!p.imageUrl && !(p.carouselUrls && p.carouselUrls.length)) {
+      alert('Generate the image/video for this post before posting.');
+      return;
+    }
+    if (!window.confirm('Post this to its platform right now?')) return;
+    setPostingNowId(id);
+    try {
+      const res = await fetch('/api/schedule-ghl', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...p, date: p.date instanceof Date ? p.date.toISOString() : p.date }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || data.success === false) {
+        alert(`Post failed: ${data.error || res.status}. Check that MAKE_WEBHOOK_URL is set and your Make scenario is on.`);
+        return;
+      }
+      if (data.stubbed) {
+        alert('MAKE_WEBHOOK_URL is not set, so nothing was posted. Add it in your env to enable posting.');
+        return;
+      }
+      await supabase.from('upsurge_posts').update({ status: 'posted', updated_at: new Date().toISOString() }).eq('id', id);
+      setPosts(prev => prev.map(x => x.id === id ? { ...x, status: 'posted' } : x));
+      if (editPost?.id === id) setEditPost(prev => prev && { ...prev, status: 'posted' });
+    } catch (e) {
+      alert(`Post failed: ${e.message}`);
+    } finally {
+      setPostingNowId(null);
+    }
+  };
+
   const deletePost = async (id) => {
     await supabase.from('upsurge_posts').delete().eq('id', id);
     setPosts(prev => prev.filter(x => x.id !== id));
@@ -3034,12 +3071,14 @@ const saveQuickPost = async () => {
               )}
               <div style={{display:"flex",gap:7,marginTop:12,flexWrap:"wrap"}}>
                 {(editPost.status==="draft"||editPost.status==="pending")&&(<>
-                  <button onClick={()=>approvePost(editPost.id)} style={{flex:1,background:"#10B98122",border:"1px solid #10B98144",color:T.green,borderRadius:7,padding:"9px",cursor:"pointer",fontSize:13,fontWeight:700}}>✓ Approve → GHL</button>
+                  <button onClick={()=>approvePost(editPost.id)} style={{flex:1,background:"#10B98122",border:"1px solid #10B98144",color:T.green,borderRadius:7,padding:"9px",cursor:"pointer",fontSize:13,fontWeight:700}}>✓ Approve (schedule)</button>
+                  <button onClick={()=>postNow(editPost.id)} disabled={postingNowId===editPost.id} style={{flex:1,background:postingNowId===editPost.id?"#1A1A2E":BRAND_GRADIENT,border:"none",color:postingNowId===editPost.id?T.muted:"#fff",borderRadius:7,padding:"9px",cursor:postingNowId===editPost.id?"default":"pointer",fontSize:13,fontWeight:700}}>{postingNowId===editPost.id?"⚡ Posting…":"⚡ Post now"}</button>
                   <button onClick={()=>{openReject(editPost);setEditPost(null);}} style={{flex:1,background:"#EF444411",border:"1px solid #EF444433",color:T.red,borderRadius:7,padding:"9px",cursor:"pointer",fontSize:13,fontWeight:700}}>✕ Reject</button>
                 </>)}
-                {editPost.status==="scheduled"&&(
+                {editPost.status==="scheduled"&&(<>
+                  <button onClick={()=>postNow(editPost.id)} disabled={postingNowId===editPost.id} style={{flex:1,background:postingNowId===editPost.id?"#1A1A2E":BRAND_GRADIENT,border:"none",color:postingNowId===editPost.id?T.muted:"#fff",borderRadius:7,padding:"9px",cursor:postingNowId===editPost.id?"default":"pointer",fontSize:13,fontWeight:700}}>{postingNowId===editPost.id?"⚡ Posting…":"⚡ Post now"}</button>
                   <button onClick={async()=>{await supabase.from('upsurge_posts').update({status:'posted',updated_at:new Date().toISOString()}).eq('id',editPost.id);setPosts(prev=>prev.map(x=>x.id===editPost.id?{...x,status:'posted'}:x));setEditPost(prev=>({...prev,status:'posted'}));}} style={{flex:1,background:"#10B98122",border:"1px solid #10B98144",color:T.green,borderRadius:7,padding:"9px",cursor:"pointer",fontSize:13,fontWeight:700}}>✓ Mark as Posted</button>
-                )}
+                </>)}
                 {editPost.status==="rejected"&&(
                   <button onClick={()=>{regeneratePost(editPost);setEditPost(null);}} style={{flex:2,background:BRAND_GRADIENT,border:"none",color:"#fff",borderRadius:7,padding:"9px",cursor:"pointer",fontSize:13,fontWeight:800}}>⚡ Regenerate</button>
                 )}
