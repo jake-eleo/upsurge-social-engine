@@ -12,6 +12,24 @@ const XAI_API_KEY = process.env.XAI_API_KEY;
 const POLL_INTERVAL = 5000; // 5 seconds
 const POLL_TIMEOUT = 300000; // 5 minutes
 
+// Hard cap so the narration always fits the clip — Grok speaks it within the
+// video length, so an over-long script gets rushed or cut off. ~2 words/second is
+// a safe natural pace. Trims back to a sentence/clause boundary, never mid-word.
+function capScriptToWords(text, maxWords) {
+  const words = (text || '').split(/\s+/).filter(Boolean);
+  if (words.length <= maxWords) return (text || '').trim();
+  let clipped = words.slice(0, maxWords).join(' ');
+  const lastStop = Math.max(clipped.lastIndexOf('. '), clipped.lastIndexOf('! '), clipped.lastIndexOf('? '));
+  if (lastStop > clipped.length * 0.5) {
+    clipped = clipped.slice(0, lastStop + 1);          // end on a full sentence
+  } else {
+    const lastComma = clipped.lastIndexOf(', ');
+    if (lastComma > clipped.length * 0.6) clipped = clipped.slice(0, lastComma);
+    clipped = clipped.replace(/[\s,;:–—-]+$/, '') + '.'; // tidy trailing punctuation
+  }
+  return clipped.trim();
+}
+
 // ── Step 1: Generate video with Grok ──────────────────────────────
 async function generateVideo({ prompt, duration, aspectRatio, resolution, referenceImageUrls, imageUrl, voiceoverScript, hook }) {
   const body = {
@@ -34,16 +52,20 @@ async function generateVideo({ prompt, duration, aspectRatio, resolution, refere
 
   // Voiceover injection — use custom script if provided, fall back to hook
   const customScript = voiceoverScript || hook || '';
-  console.log('🎙 Custom voiceover script:', customScript);
   if (customScript.trim().length > 0) {
     // Strip SSML/pause tags — Grok video model doesn't parse them
-    const cleanScript = customScript
+    let cleanScript = customScript
       .replace(/\[pause\]|\[long-pause\]/gi, ',')
       .replace(/<\/?emphasis>|<\/?slow>|<\/?soft>|<\/?whisper>/gi, '')
       .replace(/\s+/g, ' ')
       .trim();
+    // HARD CAP: keep narration within the clip length (~2 words/sec) so it never
+    // runs past the end of the video. body.duration is 10s (with ref image) or 15s.
+    const maxWords = Math.max(12, Math.round((body.duration || 10) * 2));
+    cleanScript = capScriptToWords(cleanScript, maxWords);
+    console.log(`🎙 Voiceover script (capped to ${maxWords} words for ${body.duration}s):`, cleanScript);
     // Prepend the exact script at the TOP so Grok weights it heavily
-    body.prompt = `NARRATOR SPEAKS ONLY THIS EXACT SENTENCE: "${cleanScript}". Deep authoritative male voice, clinical pacing.\n\n${body.prompt}`;
+    body.prompt = `NARRATOR SPEAKS ONLY THIS EXACT SENTENCE: "${cleanScript}". Clear, energetic, upbeat voice; finish speaking within ${body.duration || 10} seconds.\n\n${body.prompt}`;
   }
   console.log('🎬 Prompt length:', body.prompt.length);
   console.log('Grok video request:', { promptStart: body.prompt.substring(0, 200), duration: body.duration, aspectRatio: body.aspect_ratio, refImages: referenceImageUrls?.length || 0 });

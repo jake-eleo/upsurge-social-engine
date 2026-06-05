@@ -928,20 +928,19 @@ FORMAT MIX RULES (follow strictly):
 For carousel posts, describe 3-5 slide topics in the suggestedImage field like: "ASSET_ID + Slide 1: [topic] | Slide 2: [topic] | Slide 3: [topic]"
 For reel posts, describe the motion and scene in suggestedImage like: "ASSET_ID + [scene description with camera movement, action, mood]"
 
-VOICEOVER RULES (CRITICAL — for short-form video narration, 15-30 second videos):
-- Target 40-75 words total (50-60 words is the sweet spot for ~20-25 seconds)
-- Must fit naturally in 15-30 seconds at conversational speaking pace
-- Energetic, credible UpSurge brand voice — gym-native, motivating, NEVER a "Dr." or clinical voice
-- Structure: HOOK (1-2 sentences) → INSIGHT (1-2 sentences with substance) → CTA or punchline (1 sentence)
-- Use [pause] tags between thoughts for natural pacing — they convert to natural breath pauses
-- Keep claims compliant: structure/function only ("supports energy", "promotes recovery"), no disease claims, no weight-loss guarantees
-- One core insight, but with supporting context — not just a bare claim
-- Example good (50 words, ~21 seconds): "That mid-afternoon crash isn't just you. [pause] Most energy drinks spike you and drop you an hour later. [pause] Pulse is built different — clean energy that supports focus without the jitters or the crash. [pause] Fuel the work. Shop UpSurge."
-- Example bad (too short): "Pulse gives you energy. [pause] Try it."
-- Example bad (too long, will exceed 30 seconds): anything over 80 words
+VOICEOVER RULES (CRITICAL — the video is only ~10 seconds, so the script MUST be short or it gets cut off):
+- HARD LIMIT: 15-25 words total. One or two punchy sentences. NEVER more than 25 words.
+- Must be fully spoken within ~10 seconds at a natural pace — shorter is safer.
+- Do NOT use [pause] tags or filler words. Every word costs time. No stats dumps.
+- Structure: quick hook → one benefit → short CTA.
+- Energetic, credible UpSurge brand voice — gym-native, motivating, NEVER a "Dr." or clinical voice.
+- Keep claims compliant: structure/function only ("supports energy", "promotes recovery"), no disease claims, no weight-loss guarantees.
+- Example good (17 words): "That 3pm crash? Pulse gives you clean energy and focus — no jitters, no crash. Shop UpSurge."
+- Example good (13 words): "Train hard, recover harder. Amino-Surge fuels your comeback. Link in bio."
+- Example BAD (too long, will get cut off): anything over 25 words, or any [pause] tags.
 
 Return JSON array with exactly ${posts.length} objects:
-[{"index":1,"caption":"...","hashtags":"Platform-optimized hashtags per HASHTAG STRATEGY above — 8-12 for Instagram, 2-4 for Facebook, 3-5 for LinkedIn, 4-6 for TikTok. Gender-neutral by default.","hook":"max-impact opening line","suggestedImage":"ASSET_ID + detailed scene description","suggestedFormat":"static|carousel|reel|story","voiceoverScript":"For reel formats ONLY: 40-75 words (target 50-60), fits in 15-30 seconds. Hook → insight with substance → CTA. Use [pause] tags between thoughts. Empty string for static/carousel."}]`
+[{"index":1,"caption":"...","hashtags":"Platform-optimized hashtags per HASHTAG STRATEGY above — 8-12 for Instagram, 2-4 for Facebook, 3-5 for LinkedIn, 4-6 for TikTok. Gender-neutral by default.","hook":"max-impact opening line","suggestedImage":"ASSET_ID + detailed scene description","suggestedFormat":"static|carousel|reel|story","voiceoverScript":"For reel formats ONLY: 15-25 words MAX (~10 seconds). One or two punchy sentences: quick hook → one benefit → short CTA. NO [pause] tags. Empty string for static/carousel."}]`
       }],
     }),
   });
@@ -965,7 +964,7 @@ Format: ${format || 'static'} ${format === 'reel' ? '— THIS IS A VIDEO POST, y
 Topic: ${topic || pillar + " content for fitness-focused adults (men and women) who want energy, recovery, fat loss, and overall health — featuring UpSurge supplements"}
 Length: ${lengths[platform]}
 ${rejectNote?`IMPORTANT — previous rejected for: "${rejectNote}". Fix this specifically.`:""}
-Return: {"caption":"...","hashtags":"Platform-optimized per HASHTAG STRATEGY: 8-12 for Instagram, 2-4 for Facebook, 3-5 for LinkedIn, 4-6 for TikTok. Fitness/supplement, gender-neutral.","hook":"...","suggestedImage":"ASSET_ID + scene description","suggestedFormat":"static|carousel|reel|story","voiceoverScript":"For reel/video formats ONLY: 40-75 words (target 50-60 = ~20-25 seconds). Energetic UpSurge brand voice — NEVER a 'Dr.'/clinical voice. Keep claims compliant (structure/function only, no disease or weight-loss guarantees). Structure: hook (1-2 sentences) → insight with substance (1-2 sentences) → CTA or punchline (1 sentence). Use [pause] tags between thoughts. Leave blank for static/carousel. Example: 'That mid-afternoon crash isn't just you. [pause] Most energy drinks spike you then drop you an hour later. [pause] Pulse is built different — clean energy that supports focus, no jitters, no crash. [pause] Fuel the work. Shop UpSurge.'"}`
+Return: {"caption":"...","hashtags":"Platform-optimized per HASHTAG STRATEGY: 8-12 for Instagram, 2-4 for Facebook, 3-5 for LinkedIn, 4-6 for TikTok. Fitness/supplement, gender-neutral.","hook":"...","suggestedImage":"ASSET_ID + scene description","suggestedFormat":"static|carousel|reel|story","voiceoverScript":"For reel/video formats ONLY — the video is ~10 seconds, so keep it to 15-25 words MAX (one or two punchy sentences). Energetic UpSurge brand voice — NEVER a 'Dr.'/clinical voice. Compliant claims only (structure/function; no disease or weight-loss guarantees). Structure: quick hook → one benefit → short CTA. NO [pause] tags. Leave blank for static/carousel. Example: 'That 3pm crash? Pulse gives you clean energy and focus — no jitters, no crash. Shop UpSurge.'"}`
       }],
     }),
   });
@@ -992,20 +991,20 @@ Generate exactly 3 posts:
    - Caption: 130–200 chars, hook MUST land before char 125, hard line breaks every 1-2 sentences
    - Hashtags: 8-12 total. Mix of 3-4 broad (#fitness #gym #fitfam #workoutmotivation), 4-6 niche (#preworkout #fatburner #supplements #recovery #energy #bcaa), and 2-3 branded (#UpSurge #UpSurgeSupplements). Fitness/supplement, gender-neutral.
    - Hook: Must stop the scroll at thumbnail size
-   ${formats.instagram === 'reel' ? '- This is a VIDEO post — write a voiceoverScript: 40-75 words (target 50-60 = ~20-25 seconds). Hook → substantive insight → CTA. Use [pause] tags between thoughts.' : ''}
+   ${formats.instagram === 'reel' ? '- This is a VIDEO post — write a voiceoverScript: 15-25 words MAX (~10 seconds, one or two punchy sentences). Quick hook → one benefit → short CTA. NO [pause] tags.' : ''}
 
 2. FACEBOOK (format: ${formats.facebook || 'static'})
    - Caption: 200–320 chars, pattern interrupt in first line, conversational tone
    - Hashtags: 2-4 MAX. Facebook penalizes hashtag spam. Use only 1-2 topic hashtags + 1 brand tag (e.g. #preworkout #fitness #UpSurge)
    - Hook: "Comment below if..." or question-based CTAs drive algorithm
    - CTA should encourage comments/shares
-   ${formats.facebook === 'reel' ? '- This is a VIDEO post — write a voiceoverScript: 40-75 words (target 50-60 = ~20-25 seconds). Hook → substantive insight → CTA. Use [pause] tags between thoughts.' : ''}
+   ${formats.facebook === 'reel' ? '- This is a VIDEO post — write a voiceoverScript: 15-25 words MAX (~10 seconds, one or two punchy sentences). Quick hook → one benefit → short CTA. NO [pause] tags.' : ''}
 
 3. TIKTOK (format: ${formats.tiktok || 'reel'})
    - Caption: 70–120 chars MAX, ultra-concise
    - Hashtags: 4-6 total. Mix of 1-2 trending/discovery (#fyp #foryou #gymtok #fittok), 2-3 niche topic (#preworkout #fatburner #fitfam #workoutmotivation), 1 branded (#UpSurge). Fitness/supplement, gender-neutral.
    - Hook: First 3 words are EVERYTHING. "Here's what nobody tells you about X" format dominates
-   - THIS IS ALWAYS A VIDEO — write a voiceoverScript: 40-75 words (target 50-60 = ~20-25 seconds). For TikTok: front-load the strongest hook in the first 2 seconds. Hook → substantive insight → CTA or punchline. Use [pause] tags between thoughts.
+   - THIS IS ALWAYS A VIDEO — write a voiceoverScript: 15-25 words MAX (~10 seconds, one or two punchy sentences). Front-load the strongest hook in the first 2 seconds, then one benefit → short CTA. NO [pause] tags.
 
 IMPORTANT: Each platform version must feel NATIVE to that platform, not like a copy-paste. Different hook formulas, different CTA styles, different energy levels. Same core message/insight, completely different execution.
 
