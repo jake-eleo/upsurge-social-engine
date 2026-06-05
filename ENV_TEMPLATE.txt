@@ -30,10 +30,16 @@ ANTHROPIC_API_KEY=sk-ant-...
 # Get one at https://console.x.ai
 XAI_API_KEY=xai-...
 
+# --- Scheduling / posting (Make.com webhook) ---
+# Your Make.com custom-webhook URL. When set, approving a post forwards it to this
+# webhook and your Make scenario posts it to Instagram/Facebook/TikTok.
+# If left blank, approval just marks the post "scheduled" locally (no posting).
+MAKE_WEBHOOK_URL=https://hook.us2.make.com/your-webhook-id
+
 # ============================================================================
 # NOT NEEDED for this build:
-#   - GHL_* (GoHighLevel) — scheduling is STUBBED (no external posting).
+#   - GHL_* (GoHighLevel) — replaced by the Make.com webhook above.
 #   - HEYGEN_API_KEY        — video uses Grok, not HeyGen. (Only the optional,
 #                             unused Avatars tab references it.)
-# Add them back only if you later wire up real scheduling or HeyGen avatars.
+# Add them back only if you later switch providers or enable HeyGen avatars.
 # ============================================================================

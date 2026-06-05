@@ -1056,11 +1056,23 @@ Return JSON array with exactly 3 objects:
   return JSON.parse(raw.replace(/```json|```/g,"").trim());
 }
 async function scheduleToGHL(post) {
-  // SCHEDULING STUBBED — no external posting. Swap in GHL or Ayrshare here later.
-  // Approval simply marks the post "scheduled" locally (in Supabase + the UI).
-  // We intentionally do NOT contact any external scheduling endpoint.
-  console.log('📅 Scheduling stubbed (local only) for post:', post?.id);
-  return true;
+  // Sends the approved post to /api/schedule-ghl, which forwards it to the
+  // Make.com webhook (MAKE_WEBHOOK_URL). If that env var is unset the route
+  // safely no-ops, so approval still just marks the post "scheduled" locally.
+  try {
+    const response = await fetch("/api/schedule-ghl", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        ...post,
+        date: post?.date instanceof Date ? post.date.toISOString() : post?.date,
+      }),
+    });
+    return response.ok;
+  } catch (e) {
+    console.warn('Schedule webhook failed:', e.message);
+    return false;
+  }
 }
 
 // ── Distribute posts across month ─────────────────────────────────
