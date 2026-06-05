@@ -736,8 +736,8 @@ async function generateCreative(post, brandConfig, passedAssets) {
     const urls = [];
 
     // Reference the real product photo (public URL) on the COVER slide only, via
-    // the image-edits endpoint. Skip for education (ingredient/illustration style).
-    const coverAsset = (assetId && pillar !== 'education') ? BRAND_ASSETS.find(a => a.id === assetId) : null;
+    // the image-edits endpoint. Used for every pillar (including Education).
+    const coverAsset = assetId ? BRAND_ASSETS.find(a => a.id === assetId) : null;
     const coverRefUrls = (coverAsset && coverAsset.localPath) ? [coverAsset.localPath] : null;
 
     for (let i = 0; i < carouselPrompts.length; i++) {
@@ -782,10 +782,10 @@ async function generateCreative(post, brandConfig, passedAssets) {
       }
     }
 
-    // ── Everything else with a product photo → IMAGE-EDITS (Grok uses the photo) ──
-    // Education stays text-to-image (ingredient/illustration style, no product ref).
+    // ── Any pillar with a product photo → IMAGE-EDITS (Grok uses the real photo) ──
+    // Education included: it now references the product photo too.
     const prompt = buildImagePrompt(platform, pillar, suggestedImage, assetId, brandConfig, hookText, fullContext, post.caption);
-    const refUrls = (productUrl && pillar !== 'education') ? [productUrl] : null;
+    const refUrls = productUrl ? [productUrl] : null;
     console.log('About to call callGenerateImage, reference photo:', refUrls ? 'YES' : 'NO', '| aspect:', imgAspect);
     const url = await callGenerateImage(prompt, { referenceUrls: refUrls, aspectRatio: imgAspect });
     return { type: "image", url, prompt };
