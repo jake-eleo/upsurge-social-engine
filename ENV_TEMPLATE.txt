@@ -36,6 +36,12 @@ XAI_API_KEY=xai-...
 # If left blank, approval just marks the post "scheduled" locally (no posting).
 MAKE_WEBHOOK_URL=https://hook.us2.make.com/your-webhook-id
 
+# Protects the scheduler endpoint (/api/run-scheduler) that posts due items.
+# Set any random string. The external cron (cron-job.org) must send it as
+# ?secret=<value> or an "Authorization: Bearer <value>" header; the daily Vercel
+# cron sends it automatically. If left blank, the endpoint is unprotected.
+CRON_SECRET=change-me-to-a-long-random-string
+
 # ============================================================================
 # NOT NEEDED for this build:
 #   - GHL_* (GoHighLevel) — replaced by the Make.com webhook above.

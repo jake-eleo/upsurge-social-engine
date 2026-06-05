@@ -1056,23 +1056,12 @@ Return JSON array with exactly 3 objects:
   return JSON.parse(raw.replace(/```json|```/g,"").trim());
 }
 async function scheduleToGHL(post) {
-  // Sends the approved post to /api/schedule-ghl, which forwards it to the
-  // Make.com webhook (MAKE_WEBHOOK_URL). If that env var is unset the route
-  // safely no-ops, so approval still just marks the post "scheduled" locally.
-  try {
-    const response = await fetch("/api/schedule-ghl", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        ...post,
-        date: post?.date instanceof Date ? post.date.toISOString() : post?.date,
-      }),
-    });
-    return response.ok;
-  } catch (e) {
-    console.warn('Schedule webhook failed:', e.message);
-    return false;
-  }
+  // Posting is handled by the scheduler cron (/api/run-scheduler), which fires
+  // each post to the Make.com webhook at its scheduled date/time. Approving a post
+  // just marks it "scheduled" (done by the caller) — we do NOT post immediately
+  // here, so it goes out on its calendar date rather than right away.
+  console.log('📅 Scheduled — will post at its date via /api/run-scheduler:', post?.id);
+  return true;
 }
 
 // ── Distribute posts across month ─────────────────────────────────
