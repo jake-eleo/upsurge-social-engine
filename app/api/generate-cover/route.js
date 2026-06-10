@@ -27,10 +27,42 @@ function getFont() {
   }
   return FONT;
 }
+// opentype.js 2.0 sporadically emits NaN coordinates in string paths (shaping/
+// kerning bug, opentypejs/opentype.js#673) — librsvg stops drawing at the first
+// NaN, which truncated hook text to a few letters. Every path is validated and,
+// on NaN, the line is laid out glyph-by-glyph with no kerning so one bad glyph
+// can't poison the rest of the line.
+function pathHasNaN(path) {
+  return path.commands.some(c =>
+    ['x', 'y', 'x1', 'y1', 'x2', 'y2'].some(k => k in c && !Number.isFinite(c[k])));
+}
+
+// Advance width that can't return NaN: falls back to summing glyph advances.
+function measureWidth(font, text, fontSize) {
+  const w = font.getAdvanceWidth(text, fontSize);
+  if (Number.isFinite(w)) return w;
+  const scale = fontSize / font.unitsPerEm;
+  return font.stringToGlyphs(text).reduce((acc, g) => acc + (g.advanceWidth || 0) * scale, 0);
+}
+
 // Convert a string to centered SVG path data at a given baseline.
 function textToPath(font, text, centerX, baselineY, fontSize) {
-  const w = font.getAdvanceWidth(text, fontSize);
-  return font.getPath(text, centerX - w / 2, baselineY, fontSize).toPathData(1);
+  const path = font.getPath(text, centerX - measureWidth(font, text, fontSize) / 2, baselineY, fontSize);
+  if (!pathHasNaN(path)) return path.toPathData(1);
+
+  console.warn('🖼 NaN in text path, using glyph-by-glyph fallback for:', text);
+  const scale = fontSize / font.unitsPerEm;
+  const glyphs = font.stringToGlyphs(text);
+  const total = glyphs.reduce((acc, g) => acc + (g.advanceWidth || 0) * scale, 0);
+  let x = centerX - total / 2;
+  let d = '';
+  for (const g of glyphs) {
+    const gp = g.getPath(x, baselineY, fontSize);
+    if (!pathHasNaN(gp)) d += gp.toPathData(1);
+    else console.warn('🖼 Skipping bad glyph in:', text);
+    x += (g.advanceWidth || 0) * scale;
+  }
+  return d;
 }
 
 // ── Build a subject-themed, ON-BRAND, TEXT-FREE background prompt ──
@@ -100,7 +132,7 @@ function layoutHook(hook, usableWidth, maxTextHeight) {
     let cur = '';
     for (const w of words) {
       const cand = cur ? `${cur} ${w}` : w;
-      if (font.getAdvanceWidth(cand, fontSize) <= usableWidth) cur = cand;
+      if (measureWidth(font, cand, fontSize) <= usableWidth) cur = cand;
       else { if (cur) lines.push(cur); cur = w; }
     }
     if (cur) lines.push(cur);
@@ -111,7 +143,7 @@ function layoutHook(hook, usableWidth, maxTextHeight) {
   for (const fontSize of candidates) {
     const lines = wrapAt(fontSize);
     const lineHeight = Math.round(fontSize * 1.18);
-    const tooWide = lines.some(l => font.getAdvanceWidth(l, fontSize) > usableWidth);
+    const tooWide = lines.some(l => measureWidth(font, l, fontSize) > usableWidth);
     if (!tooWide && lines.length * lineHeight <= maxTextHeight && lines.length <= 6) {
       return { lines, fontSize, lineHeight };
     }
