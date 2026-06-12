@@ -183,6 +183,14 @@ const SUPPLEMENT_LABEL_DIRECTIVE = `PRODUCT LABEL DIRECTIVE (MANDATORY — appli
 - ABSOLUTELY FORBIDDEN text or marks on labels, caps, packaging, or anywhere in the image: "Rx Only", "Prescription Only", any drug/pharmacy framing, "Research Use Only", "RUO", "Not For Human Use", "Lab Use Only", "For In Vitro Use", "Reagent", any biohazard symbol, any skull-and-crossbones symbol, any orange/yellow hazard stripes, and any disease-treatment claims (e.g. "cures", "treats").
 - If any label text would otherwise read like a drug or research-chemical disclaimer, replace it with "Dietary Supplement" or omit the regulatory text entirely. When in doubt, leave the label clean.`;
 
+// Image/video models default to women when a prompt offers "man or woman", which
+// skewed the feed female. Pick one gender explicitly per generation (50/50) so
+// subjects balance out across posts. If the post's own scene description already
+// names a gender, that text still wins — this only replaces the ambiguous default.
+function pickSubjectGender() {
+  return Math.random() < 0.5 ? 'man' : 'woman';
+}
+
 function buildImagePrompt(platform, pillar, suggestedImageGuidance, assetId, brandConfig, hookText, fullContext, caption) {
   const asset = BRAND_ASSETS.find(a => a.id === assetId);
   const platformComp = PLATFORM_COMPOSITION[platform] || PLATFORM_COMPOSITION.instagram;
@@ -195,7 +203,8 @@ function buildImagePrompt(platform, pillar, suggestedImageGuidance, assetId, bra
   const colorPalette = UPSURGE_BRAND_COLORS;
   const accentGlow = `${BRAND.colors.secondary} violet`;
   const primaryAccent = `${BRAND.colors.primary} aqua`;
-  const subjectGuidance = 'Show fit, healthy, energetic adults — men or women, both welcome. Athletic, motivated, real. No clinical or medical framing.';
+  const subjectGender = pickSubjectGender();
+  const subjectGuidance = `If a person appears, show a fit, healthy, energetic ${subjectGender} — athletic, motivated, real. No clinical or medical framing.`;
 
   // ── PILLAR-SPECIFIC STYLE DIRECTION (single unisex palette) ──
   let pillarStyle = '';
@@ -204,7 +213,7 @@ function buildImagePrompt(platform, pillar, suggestedImageGuidance, assetId, bra
   if (pillar === 'education') {
     pillarStyle = `EDUCATION STYLE — ingredient science / how-it-works visual:
 - Clean, modern, high-contrast composition that explains a benefit or how a formula works
-- HERO options: macro shot of the supplement (powder, scoop, capsules, botanical ingredients) OR a fit, healthy adult (man or woman) mid-action with simple benefit callouts
+- HERO options: macro shot of the supplement (powder, scoop, capsules, botanical ingredients) OR a fit, healthy ${subjectGender} mid-action with simple benefit callouts
 - Bright studio or gym lighting with ${primaryAccent} and ${accentGlow} accent glow
 - Energetic, premium fitness-brand infographic feel — credible but never clinical
 - Style reference: premium supplement brand meets modern fitness editorial`;
@@ -220,7 +229,7 @@ function buildImagePrompt(platform, pillar, suggestedImageGuidance, assetId, bra
 - Dark grid-pattern background (subtle dot or line grid at 8% opacity)
 - Clean white review card floating in center with generous padding
 - 5-star rating in the accent color at top of the card
-- Optional: a real, fit, healthy person (man or woman) post-workout softly lit in the background
+- Optional: a real, fit, healthy ${subjectGender} post-workout softly lit in the background
 - Authentic energy, maximum credibility
 - Style reference: premium testimonial / review slide`;
 
@@ -233,7 +242,7 @@ function buildImagePrompt(platform, pillar, suggestedImageGuidance, assetId, bra
   }
   else if (pillar === 'lifestyle') {
     pillarStyle = `LIFESTYLE STYLE — cinematic training / energy photography:
-- Dynamic scene: a fit, healthy adult (man or woman) training, lifting, running, or fueling up — gym, home gym, outdoor, or kitchen at golden hour
+- Dynamic scene: a fit, healthy ${subjectGender} training, lifting, running, or fueling up — gym, home gym, outdoor, or kitchen at golden hour
 - Sweat, motion, daylight; energetic and aspirational
 - Subject partially rim-lit with ${primaryAccent} accent
 - Evokes "this is how training feels when you're fueled"
@@ -329,16 +338,17 @@ function buildVideoPrompt(platform, pillar, suggestedImageGuidance, brandConfig)
   // Single unisex UpSurge accents (no gender branching).
   const primaryAccent = `${BRAND.colors.primary} aqua`;
   const accentGlow = `${BRAND.colors.secondary} violet`;
+  const subjectGender = pickSubjectGender();
 
   // ── PILLAR-SPECIFIC OPENING VISUAL ──
   let openingVisual = '';
 
   if (pillar === 'education') {
-    openingVisual = `OPENING FRAME (first 1-2 seconds): Energetic ingredient / how-it-works visual — macro shots of the supplement (powder swirling, a scoop pouring, capsules, botanical ingredients) OR a fit, healthy adult (man or woman) mid-action with motion and energy. Bright, high-contrast, with ${primaryAccent} and ${accentGlow} accent glow. This is the SCROLL-STOPPER frame — clean, modern, credible. As the video progresses, the camera pushes in or reveals the product/ingredient with dynamic energy. No clinical or medical imagery.`;
+    openingVisual = `OPENING FRAME (first 1-2 seconds): Energetic ingredient / how-it-works visual — macro shots of the supplement (powder swirling, a scoop pouring, capsules, botanical ingredients) OR a fit, healthy ${subjectGender} mid-action with motion and energy. Bright, high-contrast, with ${primaryAccent} and ${accentGlow} accent glow. This is the SCROLL-STOPPER frame — clean, modern, credible. As the video progresses, the camera pushes in or reveals the product/ingredient with dynamic energy. No clinical or medical imagery.`;
   } else if (pillar === 'social_proof') {
-    openingVisual = `OPENING FRAME (first 1-2 seconds): Close-up of a fit, healthy adult (man or woman) at a moment of energy and focus — gym light, rim-lit with ${primaryAccent}. Confident, present, authentic. As the video progresses, slow cinematic push-in or subtle dolly.`;
+    openingVisual = `OPENING FRAME (first 1-2 seconds): Close-up of a fit, healthy ${subjectGender} at a moment of energy and focus — gym light, rim-lit with ${primaryAccent}. Confident, present, authentic. As the video progresses, slow cinematic push-in or subtle dolly.`;
   } else if (pillar === 'lifestyle') {
-    openingVisual = `OPENING FRAME (first 1-2 seconds): Cinematic wide shot of a fit, healthy adult (man or woman) training — gym at golden hour, home workout, outdoor run, or fueling up in a bright kitchen. Dynamic, energetic lighting with ${primaryAccent} rim light. Shallow depth of field. Aspirational "this is how training feels when you're fueled" energy.`;
+    openingVisual = `OPENING FRAME (first 1-2 seconds): Cinematic wide shot of a fit, healthy ${subjectGender} training — gym at golden hour, home workout, outdoor run, or fueling up in a bright kitchen. Dynamic, energetic lighting with ${primaryAccent} rim light. Shallow depth of field. Aspirational "this is how training feels when you're fueled" energy.`;
   } else { // offer
     openingVisual = `OPENING FRAME (first 1-2 seconds): Hero product shot — ${asset ? `the ${asset.name}` : 'a premium UpSurge product (tub or bottle)'} center-frame, glowing with ${primaryAccent} atmospheric light. Energy rings and particle effects radiate from the product. Dark background with starfield particles. Camera slowly orbits or pushes in on the product.`;
   }
@@ -353,7 +363,7 @@ CAMERA: Slow cinematic push-in or orbit. Dramatic first 0.5s. Dynamic moment at 
 
 ASPECT: ${platformAspect}. ONE continuous scene, ONE subject. No split-screen, no duplicated/mirrored products, no picture-in-picture, no stacked shots.
 
-SUBJECT: Show fit, healthy, energetic adults — men or women, both welcome. Athletic, motivated, real. No clinical or medical framing.
+SUBJECT: If a person appears, show a fit, healthy, energetic ${subjectGender} — athletic, motivated, real. No clinical or medical framing.
 
 COLOR: UpSurge palette — black ${BRAND.colors.bg}, clean white, ${primaryAccent} to ${accentGlow} accents. Three-point cinematic lighting. Shallow DOF.
 
@@ -393,6 +403,7 @@ function buildCarouselPrompts(platform, pillar, post, brandConfig, slideContent)
   const colorPalette = `Background: near-black ${BRAND.colors.bg} to deep charcoal #141420. Accent gradient: electric aqua ${BRAND.colors.primary} flowing into vivid violet ${BRAND.colors.secondary}. Emphasis text: bright white #FFFFFF. Secondary emphasis: ${BRAND.colors.secondary} violet. All body text in white. Bright, high-contrast, energetic fitness-brand palette. FORBIDDEN: muddy/dull tones, generic stock teal.`;
   const accentGlow = `${BRAND.colors.secondary} violet`;
   const primaryAccent = `${BRAND.colors.primary} aqua`;
+  const subjectGender = pickSubjectGender();
   const noLogo = `CRITICAL: DO NOT render any logo, brand name, letters "UPSURGE", "upsurge", logo mark, or any logo-like graphic anywhere in the image. DO NOT put any text, watermark, or graphic element in the top-left corner or top-right corner. Leave BOTH top corners completely EMPTY for at least 200px from each edge. The brand logo will be added as a post-processing overlay.`;
 
   const prompts = [];
@@ -408,7 +419,7 @@ function buildCarouselPrompts(platform, pillar, post, brandConfig, slideContent)
 LAYOUT: Square 1:1 (1080×1080px).
 ${noLogo}
 
-HERO VISUAL: A bold, high-contrast visual that explains a benefit or how a formula works — a macro shot of the supplement (powder swirling, a scoop pouring, capsules, or botanical ingredients) OR a fit, healthy adult (man or woman) mid-action. Bright studio or gym lighting. Energetic, premium, credible.
+HERO VISUAL: A bold, high-contrast visual that explains a benefit or how a formula works — a macro shot of the supplement (powder swirling, a scoop pouring, capsules, or botanical ingredients) OR a fit, healthy ${subjectGender} mid-action. Bright studio or gym lighting. Energetic, premium, credible.
 
 ACCENT GLOW: ${primaryAccent} and ${accentGlow} accents with energy particles around the hero element.
 
@@ -447,7 +458,7 @@ STYLE: Clean, premium, credible. Like a top-tier review slide. Pure editorial de
 LAYOUT: Square 1:1 (1080×1080px).
 ${noLogo}
 
-HERO VISUAL: Dramatic cinematic photograph of a fit, healthy adult (man or woman) training, lifting, running, or fueling up (gym, home gym, outdoor, or bright kitchen at golden hour). Sweat, motion, daylight. Shallow depth of field. Subject partially rim-lit with ${primaryAccent}. Aspirational — "this is how training feels when you're fueled."
+HERO VISUAL: Dramatic cinematic photograph of a fit, healthy ${subjectGender} training, lifting, running, or fueling up (gym, home gym, outdoor, or bright kitchen at golden hour). Sweat, motion, daylight. Shallow depth of field. Subject partially rim-lit with ${primaryAccent}. Aspirational — "this is how training feels when you're fueled."
 
 TEXT OVERLAY (CRITICAL): Render this exact hook as large semi-bold typography: "${hook}"
 Use clean white with ONE key word highlighted in ${accentGlow}.
@@ -893,7 +904,7 @@ IMPORTANT ASSET RULES:
 - UpSurge is a unisex brand — there are NO gendered asset variants. Use the single product/logo assets for everyone.
 - Reference the ACTUAL UpSurge products by name (Up-Fuel, Pulse, ThermoSurge, DreamSlim, Shroom-Surge, Amino-Surge) and the bundles where relevant.
 - For Education posts, prefer ingredient/product macro scenes or a product asset; you may leave the asset field as a scene description if no product asset fits.
-- Subjects are gender-neutral: describe "a fit, healthy adult (man or woman)" or "athletes" — never specify a single gender as mandatory.
+- When a post features a person, alternate subjects across the month — roughly half men, half women — and SPECIFY the gender explicitly in suggestedImage (e.g. "a fit, athletic man mid-lift", "a fit, athletic woman on a morning run"). Never write the ambiguous "(man or woman)". Product/macro scenes need no person.
 ${topExamples}${bottomExamples}
 
 Respond ONLY with valid JSON. No markdown fences, no preamble.`;

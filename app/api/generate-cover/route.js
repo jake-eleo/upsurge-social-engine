@@ -70,10 +70,13 @@ function textToPath(font, text, centerX, baselineY, fontSize) {
 // contain NO text/letters/logos of its own.
 function buildCoverBackgroundPrompt({ hook, suggestedImage, pillar }) {
   const subject = [suggestedImage, hook].filter(Boolean).join('. ').slice(0, 400);
+  // Image models default to women when offered "man or woman" — pick one
+  // explicitly per generation (50/50) so cover subjects balance across posts.
+  const gender = Math.random() < 0.5 ? 'man' : 'woman';
   const pillarMood = {
     education: 'ingredient science made beautiful — clean macro shots of supplement powder/capsules/ingredients, modern fitness-brand infographic feel',
-    social_proof: 'a fit, healthy adult (man or woman) in their element at golden hour — sharp, confident, energetic, cinematic warm-cool contrast',
-    lifestyle: 'the training life — gym energy, motion, sweat, early-morning runs, fueling up, cinematic volumetric light, aspirational',
+    social_proof: `a fit, healthy ${gender} in their element at golden hour — sharp, confident, energetic, cinematic warm-cool contrast`,
+    lifestyle: `the training life — a fit, healthy ${gender} mid-workout, gym energy, motion, sweat, early-morning runs, fueling up, cinematic volumetric light, aspirational`,
     offer: 'premium supplement product hero — studio-grade lighting, energetic glow, bold and inviting',
   }[pillar] || 'premium fitness-supplement brand campaign, cinematic and aspirational';
 
